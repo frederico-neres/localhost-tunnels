@@ -1,5 +1,3 @@
-const { v4: uuidv4 } = require('uuid');
-
 var express = require('express'),
     app = express(),
     http = require('http'),
@@ -47,23 +45,6 @@ function getClientInfoByUrl(req) {
     }
 }
 
-function createClientId() {
-    let isCreatedId = false
-    let createdId = ""
- 
-    while(!isCreatedId) {
-        let clientId = uuidv4()
-        let client = clientsList.get(clientId)
-
-        if(!client) {
-            createdId = clientId
-            isCreatedId = true
-        }
-    }
-
-    return createdId
-}
-
 app.use(async function (req, res, next) {
 
     let clientInfo = req.headers["referer"] ? getClientInfoByReferer(req) : getClientInfoByUrl(req)
@@ -90,19 +71,23 @@ app.use(async function (req, res, next) {
 })
 
 server = http.Server(app);
-server.listen(3000, () => console.log('Running…'));
+server.listen(5000, () => console.log('Running…'));
 
 io = socketIO(server);
 
 io.on('connection', function (socket) {
 
-  let clientId = createClientId()
-  socket.emit('hand-shake', {conected: true, id: clientId});
+  socket.emit('hand-shake', {conected: true, id: socket.id});
 
   socket.on('client-information', function (message) {
     if(message["received"]) {
         clientsList.set(message["id"], socket)
     }
+  });
+
+  
+  socket.on('disconnect', function () {
+    clientsList.delete(socket.id)
   });
 
 });
